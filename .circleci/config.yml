@@ -21,14 +21,19 @@ jobs:
         - node_modules
         key: v1-dependencies-{{ checksum "package.json" }}
 
-    - run: npm deploy
-  workflows:
-    version: 2
-      tagged:
-        jobs:
-          - deploy:
-            filters:
-              tags:
-                only: /^v\d+\.\d+\.\d+$/
-              branches:
-                ignore: /.*/
+    - run:
+        name: Authenticate with registry
+        command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
+
+    - run: npm publish
+
+workflows:
+  version: 2
+  tagged_deploy:
+    jobs:
+      - deploy:
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/
