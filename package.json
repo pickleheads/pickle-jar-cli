@@ -1,10 +1,10 @@
 {
-  "name": "idea-jar-cli",
-  "version": "1.0.1",
+  "name": "pickle-jar-cli",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "bin": {
-    "idea-jar-cli": "bin/index.js"
+    "pickle-jar": "bin/index.js"
   },
   "author": "Zack Harley & Derek Grossman",
   "license": "MIT",

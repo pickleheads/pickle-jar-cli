@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
+const argv = require('yargs').argv;
 const chalk = require('chalk');
 const mongoose = require('mongoose');
+const pkg = require('../package');
 const readline = require('readline');
-const argv = require('yargs').argv;
 
 const Schema = mongoose.Schema;
 
@@ -15,6 +16,19 @@ const ideaSchema = new Schema({
   date: { type: Date, default: Date.now },
 });
 let rl;
+
+const HELP_TEXT = `
+${chalk.green.bold('pickle-jar')} <cmd> 
+
+  ${chalk.cyan.bold('Commands:')}
+    add             Add a new idea
+    ls              List existing ideas
+    repl            Enter REPL mode
+
+  ${chalk.cyan.bold('Options:')}
+    --help, -h      Show help
+    --version, -v   Show version\
+`;
 
 (async function() {
   await mongoose.connect(
@@ -28,7 +42,14 @@ let rl;
 
 async function main() {
   const command = argv._[0];
-  if (command === 'ls') {
+  if (!command && (argv.h || argv.help)) {
+    console.log(HELP_TEXT);
+    process.exit(0);
+  }
+  if (!command && (argv.v || argv.version)) {
+    console.log(`v${pkg.version}`);
+    process.exit(0);
+  } else if (command === 'ls') {
     await checkoutIdeas();
     process.exit(0);
   } else if (command === 'add') {
