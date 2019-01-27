@@ -2,19 +2,10 @@
 
 const argv = require('yargs').argv;
 const chalk = require('chalk');
-const mongoose = require('mongoose');
 const pkg = require('../package');
 const readline = require('readline');
+const { api } = require('../lib/api');
 
-const Schema = mongoose.Schema;
-
-let db;
-let Idea;
-const ideaSchema = new Schema({
-  idea: String,
-  author: { type: String, default: 'picklehead Jackson' },
-  date: { type: Date, default: Date.now },
-});
 let rl;
 
 const HELP_TEXT = `
@@ -31,12 +22,6 @@ ${chalk.green.bold('pickle-jar')} <cmd>
 `;
 
 (async function() {
-  await mongoose.connect(
-    'mongodb://jumbert:jumbert1@ds141401.mlab.com:41401/idea-jar',
-    { useNewUrlParser: true }
-  );
-  db = mongoose.connection;
-  Idea = mongoose.model('Idea', ideaSchema);
   main();
 })();
 
@@ -50,7 +35,7 @@ async function main() {
     console.log(`v${pkg.version}`);
     process.exit(0);
   } else if (command === 'ls') {
-    await checkoutIdeas();
+    await listIdeas();
     process.exit(0);
   } else if (command === 'add') {
     const idea = argv.m || argv.message;
@@ -61,7 +46,7 @@ async function main() {
     await addIdea(idea);
     process.exit(0);
   } else if (command === 'repl') {
-    repl();
+    await repl();
   } else {
     console.log(chalk.bold.red('Eat shit motherfucker'));
     process.exit(1);
@@ -86,7 +71,7 @@ async function repl() {
           }
         );
       } else if (answer.toLowerCase() === 'l') {
-        await checkoutIdeas();
+        await listIdeas();
         rl.close();
         process.exit(0);
       } else {
@@ -100,13 +85,31 @@ async function repl() {
   );
 }
 
-async function addIdea(idea) {
-  await Idea.create({ idea });
-  console.log(chalk.green('Idea added successfully:'), idea);
+async function addIdea(ideaToCreate) {
+  const { idea: createdIdea } = await api.addIdea({ idea: ideaToCreate });
+  console.log(chalk.green('Idea added successfully:'), createdIdea.idea);
 }
 
-async function checkoutIdeas() {
-  const ideas = await Idea.find({});
-  console.log('');
-  ideas.forEach(idea => console.log(chalk.yellow(`- ${idea.idea}`)));
+async function listIdeas() {
+  const { ideas } = await api.listIdeas();
+  ideas.forEach(({ idea }) => console.log(chalk.yellow(`- ${idea}`)));
 }
+
+async function handleRejection(err) {
+  if (err) {
+    await handleUnexpected(err);
+  } else {
+    console.error('An unexpected empty rejection occurred');
+  }
+  process.exit(1);
+}
+
+async function handleUnexpected(err) {
+  console.error(
+    `An unexpected error occurred!\n  ${err.message}\n ${err.stack}`
+  );
+  process.exit(1);
+}
+
+process.on('unhandledRejection', handleRejection);
+process.on('uncaughtException', handleUnexpected);
