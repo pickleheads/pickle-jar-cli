@@ -22,7 +22,7 @@ ${chalk.green.bold('pickle-jar')} <cmd>
 `;
 
 (async function() {
-  main();
+  await main();
 })();
 
 async function main() {
@@ -35,7 +35,10 @@ async function main() {
     console.log(`v${pkg.version}`);
     process.exit(0);
   } else if (command === 'ls') {
-    await listIdeas();
+    const status = argv.status;
+    const long = argv.l;
+    const options = { long };
+    await listIdeas(status, options);
     process.exit(0);
   } else if (command === 'add') {
     const idea = argv.m || argv.message;
@@ -90,9 +93,18 @@ async function addIdea(ideaToCreate) {
   console.log(chalk.green('Idea added successfully:'), createdIdea.idea);
 }
 
-async function listIdeas() {
-  const { ideas } = await api.listIdeas();
-  ideas.forEach(({ idea }) => console.log(chalk.yellow(`- ${idea}`)));
+async function listIdeas(status, options) {
+  const { long } = options;
+  const query = {};
+  if (status) {
+    query.status = status;
+  }
+  const { ideas } = await api.listIdeas({ query });
+  if (long) {
+    console.table(ideas)
+  } else {
+    ideas.forEach(({ idea }) => console.log(chalk.yellow(`- ${idea}`)));
+  }
 }
 
 async function handleRejection(err) {
