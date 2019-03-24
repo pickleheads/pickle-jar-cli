@@ -3,7 +3,7 @@
 const argv = require('yargs').argv;
 const chalk = require('chalk');
 const pkg = require('../package');
-const readline = require('readline');
+const readline = require('../lib/readline')();
 const { api } = require('../lib/api');
 
 let rl;
@@ -46,7 +46,12 @@ async function main() {
       console.log(chalk.bold.red('Give me an idea you horseradish man, you u'));
       process.exit(1);
     }
-    await addIdea(idea);
+    const categories = argv.category;
+    const ideaToCreate = {
+      idea,
+      ...(categories && { categories }),
+    };
+    await addIdea(ideaToCreate);
     process.exit(0);
   } else if (command === 'repl') {
     await repl();
@@ -57,39 +62,38 @@ async function main() {
 }
 
 async function repl() {
-  rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  rl.question(
-    chalk.bold.cyan('Do you want to add jims (A) or look at jims (L)? '),
-    async answer => {
-      if (answer.toLowerCase() === 'a') {
-        rl.question(
-          chalk.bold.cyan('What idea would you like to add? '),
-          async idea => {
-            await addIdea(idea);
-            rl.close();
-            process.exit(0);
-          }
-        );
-      } else if (answer.toLowerCase() === 'l') {
-        await listIdeas();
-        rl.close();
-        process.exit(0);
-      } else {
-        console.log(
-          chalk.bold.magenta('you mother fucker pick one of the options')
-        );
-        rl.close();
-        process.exit(1);
-      }
-    }
+  const command = await readline.question(
+    chalk.bold.cyan('Do you want to add jims (A) or look at jims (L)? ')
   );
+  let exitCode = 0;
+  if (command.toLowerCase() === 'a') {
+    const idea = await readline.question(
+      chalk.bold.cyan('What idea would you like to add? ')
+    );
+    const categories = await readline.question(
+      chalk.bold.cyan(
+        'Do you want to add to any categories? Separate categories by comma. '
+      )
+    );
+    const ideaToCreate = {
+      idea,
+      ...(categories && { categories: categories.split(',') }),
+    };
+    await addIdea(ideaToCreate);
+  } else if (command.toLowerCase() === 'l') {
+    await listIdeas();
+  } else {
+    console.log(
+      chalk.bold.magenta('you mother fucker pick one of the options')
+    );
+    exitCode = 1;
+  }
+  readline.close();
+  process.exit(exitCode);
 }
 
 async function addIdea(ideaToCreate) {
-  const { idea: createdIdea } = await api.addIdea({ idea: ideaToCreate });
+  const { idea: createdIdea } = await api.addIdea({ body: ideaToCreate });
   console.log(chalk.green('Idea added successfully:'), createdIdea.idea);
 }
 
@@ -101,7 +105,7 @@ async function listIdeas(status, options) {
   }
   const { ideas } = await api.listIdeas({ query });
   if (long) {
-    console.table(ideas)
+    console.table(ideas);
   } else {
     ideas.forEach(({ idea }) => console.log(chalk.yellow(`- ${idea}`)));
   }
