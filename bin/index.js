@@ -16,7 +16,7 @@ ${chalk.green.bold('pickle-jar')} <cmd>
 
   ${chalk.cyan.bold('Options:')}
     --help, -h      Show help
-    --version, -v   Show version\
+    --version, -v   Show version
 `;
 
 (async function() {
