@@ -6,8 +6,6 @@ const pkg = require('../package');
 const readline = require('../lib/readline')();
 const { api } = require('../lib/api');
 
-let rl;
-
 const HELP_TEXT = `
 ${chalk.green.bold('pickle-jar')} <cmd> 
 
@@ -37,7 +35,8 @@ async function main() {
   } else if (command === 'ls') {
     const status = argv.status;
     const long = argv.l;
-    const options = { long };
+    const page = argv.p || argv.page;
+    const options = { long, page };
     await listIdeas(status, options);
     process.exit(0);
   } else if (command === 'add') {
@@ -98,16 +97,20 @@ async function addIdea(ideaToCreate) {
 }
 
 async function listIdeas(status, options) {
-  const { long } = options;
-  const query = {};
+  const { long, page = 1 } = options;
+  const limit = 10;
+  const skip = (page - 1) * limit;
+  const query = { skip };
   if (status) {
     query.status = status;
   }
-  const { ideas } = await api.listIdeas({ query });
+  const { count, ideas } = await api.listIdeas({ query });
   if (long) {
     console.table(ideas);
   } else {
     ideas.forEach(({ idea }) => console.log(chalk.yellow(`- ${idea}`)));
+    const numberOfPages = Math.ceil(count / limit);
+    console.log(chalk.italic.cyan(`\n-- Page ${page}/${numberOfPages} --`));
   }
 }
 
